@@ -6,11 +6,15 @@ import {
   Bell,
   Bird,
   Bug,
+  Calculator,
   CaretDown,
   ChatCircle,
   CheckCircle,
   Clock,
   Code,
+  Database,
+  DownloadSimple,
+  FileText,
   Folder,
   Gear,
   GridFour,
@@ -25,19 +29,20 @@ import {
   SlidersHorizontal,
   Sparkle,
   TerminalWindow,
+  Table,
   X,
   Wrench,
 } from "@phosphor-icons/react";
 
 const actions = [
-  { icon: Code, color: "blue", text: "Изучить проект и разобраться в нём" },
-  { icon: Hammer, color: "violet", text: "Создать смету, документ или инструмент" },
-  { icon: ArrowCounterClockwise, color: "green", text: "Проверить результат и предложить изменения" },
-  { icon: Bug, color: "orange", text: "Исправить проблему или ошибку" },
+  { icon: Calculator, color: "blue", text: "Составить смету по описанию или файлам", target: "estimate" },
+  { icon: Table, color: "violet", text: "Проверить объёмы, цены и расчёты", target: "estimate" },
+  { icon: FileText, color: "green", text: "Подготовить КС-2, КС-3 или предложение", target: "documents" },
+  { icon: MagnifyingGlass, color: "orange", text: "Найти и подтвердить источники цен", target: "sources" },
 ];
 
-const pinned = ["kolibri-ai-platform", "Смета дома 140 м²", "Акты КС-2 и КС-3"];
-const projects = ["Колибри", "Фабрика смет", "База документов"];
+const pinned = ["Дом 140 м² — кровля и фасад", "Ремонт офиса 320 м²", "Акты КС-2 и КС-3 за июль"];
+const projects = ["Фабрика Колибри", "Бизнес-центр Север", "Частные дома 2026"];
 
 function NavItem({ icon: Icon, children, active, onClick }) {
   return <button className={`nav-item ${active ? "active" : ""}`} onClick={onClick}><Icon size={19} /> <span>{children}</span></button>;
@@ -45,7 +50,7 @@ function NavItem({ icon: Icon, children, active, onClick }) {
 
 export function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [currentProject, setCurrentProject] = useState("kolibri-ai-platform");
+  const [currentProject, setCurrentProject] = useState("Дом 140 м² — кровля и фасад");
   const [value, setValue] = useState("");
   const [submitted, setSubmitted] = useState("");
   const [rightPanel, setRightPanel] = useState(false);
@@ -83,8 +88,10 @@ export function App() {
         </div>
         <nav className="main-nav">
           <NavItem icon={PencilSimple} active={screen === "home" && !settings} onClick={() => { setScreen("home"); setSettings(false); setSubmitted(""); }}>Новый чат</NavItem>
-          <NavItem icon={Folder}>Проекты</NavItem>
-          <NavItem icon={GridFour}>Документы</NavItem>
+          <NavItem icon={Folder} active={screen === "projects"} onClick={() => { setScreen("projects"); setSettings(false); }}>Проекты</NavItem>
+          <NavItem icon={Calculator} active={screen === "estimate"} onClick={() => { setScreen("estimate"); setSettings(false); }}>Сметы</NavItem>
+          <NavItem icon={FileText} active={screen === "documents"} onClick={() => { setScreen("documents"); setSettings(false); }}>Документы</NavItem>
+          <NavItem icon={Database} active={screen === "sources"} onClick={() => { setScreen("sources"); setSettings(false); }}>Источники цен</NavItem>
           <NavItem icon={Clock} active={screen === "scheduled"} onClick={() => { setScreen("scheduled"); setSettings(false); }}>Запланировано</NavItem>
           <NavItem icon={Wrench} active={screen === "plugins"} onClick={() => { setScreen("plugins"); setSettings(false); }}>Плагины</NavItem>
           <NavItem icon={ShieldCheck}>Контроль</NavItem>
@@ -92,7 +99,7 @@ export function App() {
         <div className="side-section">
           <p>Закреплённые</p>
           {pinned.map((item, index) => (
-            <button key={item} className={`project-row ${currentProject === item ? "active" : ""}`} onContextMenu={event => { event.preventDefault(); setProjectMenu(true); }} onClick={() => { setCurrentProject(item); setSubmitted(""); setSettings(false); }}>
+            <button key={item} className={`project-row ${currentProject === item ? "active" : ""}`} onContextMenu={event => { event.preventDefault(); setProjectMenu(true); }} onClick={() => { setCurrentProject(item); setSubmitted(""); setSettings(false); setScreen("home"); }}>
               {index === 0 ? <Folder size={18} /> : <ChatCircle size={18} />}<span>{item}</span>
             </button>
           ))}
@@ -110,6 +117,14 @@ export function App() {
       <main className="workspace">
         {settings ? (
           <Settings onClose={() => setSettings(false)} />
+        ) : screen === "estimate" ? (
+          <EstimateWorkspace project={currentProject} />
+        ) : screen === "projects" ? (
+          <ProjectsWorkspace onOpen={project => { setCurrentProject(project); setScreen("estimate"); }} />
+        ) : screen === "documents" ? (
+          <DocumentsWorkspace project={currentProject} />
+        ) : screen === "sources" ? (
+          <SourcesWorkspace />
         ) : screen === "plugins" ? (
           <Plugins />
         ) : screen === "scheduled" ? (
@@ -119,8 +134,8 @@ export function App() {
             <Bird size={54} className="brand-mark" />
             <h1>Что создадим в <button>{currentProject}</button>?</h1>
             <div className="action-grid">
-              {actions.map(({ icon: Icon, color, text }) => (
-                <button key={text} className="action-card" onClick={() => setValue(text)}>
+              {actions.map(({ icon: Icon, color, text, target }) => (
+                <button key={text} className="action-card" onClick={() => setScreen(target)}>
                   <Icon size={23} className={color} />
                   <span>{text}</span>
                 </button>
@@ -137,12 +152,12 @@ export function App() {
         )}
 
         {!settings && screen === "home" && <section className="composer-wrap">
-          <div className="context-strip"><span><Folder size={17} /> {currentProject}</span><span className="context-secondary"><Code size={17} /> Облачный кластер</span><span className="context-secondary">main</span></div>
+          <div className="context-strip"><span><Folder size={17} /> {currentProject}</span><span className="context-secondary"><Calculator size={17} /> Сметы и документы</span><span className="context-secondary">Предварительная</span></div>
           <div className="composer">
-            <textarea aria-label="Сообщение" value={value} onChange={event => setValue(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); submit(); } }} placeholder="Выполните любую задачу" />
+            <textarea aria-label="Сообщение" value={value} onChange={event => setValue(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); submit(); } }} placeholder="Опишите объект, работу или приложите файлы" />
             <div className="composer-actions">
               <div><button aria-label="Добавить" className="icon-button"><Plus size={22} /></button><button className="access-button"><ShieldCheck size={17} /> Полный доступ</button></div>
-              <div><button className="model-button">Kolibri Pro <CaretDown size={14} /></button><button aria-label="Микрофон" className="icon-button"><Microphone size={20} /></button><button aria-label="Отправить" className={`send-button ${value.trim() ? "ready" : ""}`} onClick={submit}><PaperPlaneTilt size={19} weight="fill" /></button></div>
+              <div><button className="model-button">Kolibri Сметчик <CaretDown size={14} /></button><button aria-label="Микрофон" className="icon-button"><Microphone size={20} /></button><button aria-label="Отправить" className={`send-button ${value.trim() ? "ready" : ""}`} onClick={submit}><PaperPlaneTilt size={19} weight="fill" /></button></div>
             </div>
           </div>
         </section>}
@@ -150,9 +165,9 @@ export function App() {
 
       {rightPanel && !settings && <aside className="utility-panel">
         <div className="utility-tabs"><button className="active"><CheckCircle size={18} /> Проверка</button><button aria-label="Закрыть" onClick={() => setRightPanel(false)}><X size={18} /></button></div>
-        <div className="branch-row"><strong>Ветка</strong><span>main</span></div>
-        <div className="utility-empty"><Code size={58} /><strong>Изменений пока нет</strong><p>Результаты работы агента появятся здесь.</p></div>
-        <div className="utility-shortcuts"><button><CheckCircle size={19} /> Проверка</button><button><TerminalWindow size={19} /> Терминал</button><button><MagnifyingGlass size={19} /> Браузер</button><button><Folder size={19} /> Файлы</button></div>
+        <div className="branch-row"><strong>Ревизия сметы</strong><span>Версия 3 · сохранено</span></div>
+        <div className="utility-empty"><CheckCircle size={58} /><strong>Критичных замечаний нет</strong><p>Один источник цены требует подтверждения перед выпуском документов.</p></div>
+        <div className="utility-shortcuts"><button><CheckCircle size={19} /> Проверка</button><button><Database size={19} /> Источники цен</button><button><ArrowCounterClockwise size={19} /> Ревизии</button><button><Folder size={19} /> Файлы проекта</button></div>
       </aside>}
 
       {projectMenu && <div className="project-menu">
@@ -235,4 +250,41 @@ function Scheduled() {
     <div className="task-list">{tasks.map(([name, text], index) => <article key={name}><button className={`task-state ${index === 0 ? "active" : ""}`} /><span><strong>{name}</strong><small>{text}</small></span>{index === 2 && <span className="live-dot" />}</article>)}</div>
     <h2 className="recommendation-title">Рекомендации</h2><div className="recommendation"><Sparkle size={20} /><span><strong>Еженедельный обзор проектов</strong><small>Каждую пятницу формировать краткий отчёт о выполненной работе</small></span><button className="pill">Добавить</button></div>
   </section>;
+}
+
+function ProjectsWorkspace({ onOpen }) {
+  const data = [["Дом 140 м² — кровля и фасад", "Москва", "Предварительная", "1 842 560 ₽"], ["Ремонт офиса 320 м²", "Санкт-Петербург", "Нужны данные", "—"], ["Фабрика Колибри", "Тверская область", "Источники проверены", "6 218 400 ₽"]];
+  return <section className="product-page"><div className="page-heading"><div><h1>Проекты</h1><p>Объекты, чаты, сметы и связанные документы</p></div><button className="primary-button"><Plus size={17} /> Новый проект</button></div><label className="page-search"><MagnifyingGlass size={19} /><input placeholder="Найти проект" /></label><div className="project-table"><div className="table-head"><span>Проект</span><span>Регион</span><span>Статус сметы</span><span>Итого</span></div>{data.map(row => <button key={row[0]} onClick={() => onOpen(row[0])}>{row.map((cell,index)=><span key={cell} className={index===2?"status-text":""}>{cell}</span>)}</button>)}</div></section>;
+}
+
+function EstimateWorkspace({ project }) {
+  const [rows, setRows] = useState([
+    { id: 1, name: "Монтаж стропильной системы", unit: "м²", qty: 168, price: 1150, type: "Работа" },
+    { id: 2, name: "Пиломатериал хвойный, сорт 1", unit: "м³", qty: 8.4, price: 27800, type: "Материал" },
+    { id: 3, name: "Утеплитель минераловатный 200 мм", unit: "м²", qty: 152, price: 980, type: "Материал" },
+    { id: 4, name: "Доставка материалов", unit: "рейс", qty: 3, price: 14500, type: "Услуга" },
+  ]);
+  const [saveState, setSaveState] = useState("Сохранено");
+  const update = (id, field, value) => { setRows(items => items.map(row => row.id === id ? {...row, [field]: field === "name" ? value : Number(value)} : row)); setSaveState("Сохранение…"); setTimeout(() => setSaveState("Сохранено"), 500); };
+  const subtotal = kind => rows.filter(row => row.type === kind).reduce((sum,row)=>sum+row.qty*row.price,0);
+  const work = subtotal("Работа"), materials = subtotal("Материал"), services = subtotal("Услуга"), total = work+materials+services;
+  return <section className="estimate-page">
+    <header className="estimate-header"><div><button className="breadcrumb"><Folder size={15} /> {project}</button><h1>Смета на кровлю и фасад</h1><p><span className="status-badge preliminary">Предварительная</span> Версия 3 · {saveState}</p></div><div><button className="secondary-button">Ревизии</button><button className="secondary-button"><DownloadSimple size={17} /> Экспорт</button><button className="primary-button">Проверить смету</button></div></header>
+    <div className="estimate-tabs"><button className="active">Смета</button><button>Источники <span>3/4</span></button><button>Допущения <span>2</span></button><button>Вопросы <span>1</span></button></div>
+    <div className="estimate-notice"><CheckCircle size={19} /><span><strong>Расчёт выполнен детерминированно</strong><small>Итоги пересчитываются после каждого изменения. Для проверки нужен источник цены по доставке.</small></span></div>
+    <div className="estimate-sheet"><div className="estimate-row estimate-columns"><span>Позиция</span><span>Тип</span><span>Ед.</span><span>Количество</span><span>Цена</span><span>Сумма</span></div>{rows.map(row => <div className="estimate-row" key={row.id}><input value={row.name} onChange={e=>update(row.id,"name",e.target.value)} /><span className="row-type">{row.type}</span><span>{row.unit}</span><input type="number" value={row.qty} onChange={e=>update(row.id,"qty",e.target.value)} /><input type="number" value={row.price} onChange={e=>update(row.id,"price",e.target.value)} /><strong>{money(row.qty*row.price)}</strong></div>)}<button className="add-row" onClick={()=>setRows(items=>[...items,{id:Date.now(),name:"Новая позиция",unit:"шт.",qty:1,price:0,type:"Работа"}])}><Plus size={17} /> Добавить позицию</button></div>
+    <aside className="estimate-summary"><h2>Итоги</h2><div><span>Работы</span><strong>{money(work)}</strong></div><div><span>Материалы</span><strong>{money(materials)}</strong></div><div><span>Услуги и доставка</span><strong>{money(services)}</strong></div><div><span>Резерв</span><strong>не задан</strong></div><div className="grand-total"><span>Всего</span><strong>{money(total)}</strong></div><small>Без НДС · цены для Москвы · актуальность 01.08.2026</small></aside>
+  </section>;
+}
+
+const money = value => new Intl.NumberFormat("ru-RU", {style:"currency", currency:"RUB", maximumFractionDigits:0}).format(value);
+
+function DocumentsWorkspace({ project }) {
+  const docs = [["Смета", "Версия 3", "Готово к проверке"], ["Коммерческое предложение", "Не создано", "Создать из сметы"], ["Акт КС-2", "Не создано", "Выберите период работ"], ["Справка КС-3", "Не создано", "Создаётся после КС-2"], ["Договор", "Черновик", "Требует реквизиты"]];
+  return <section className="product-page"><div className="page-heading"><div><button className="breadcrumb"><Folder size={15} /> {project}</button><h1>Документы</h1><p>Формируются только из сохранённой рассчитанной ревизии сметы</p></div><button className="primary-button"><Plus size={17} /> Создать документ</button></div><div className="document-grid">{docs.map(([name,version,action])=><article key={name}><span className="document-icon"><FileText size={22}/></span><div><strong>{name}</strong><small>{version}</small></div><button className="secondary-button">{action}</button></article>)}</div></section>;
+}
+
+function SourcesWorkspace() {
+  const sources=[["Пиломатериал хвойный", "ООО «ЛесТорг»", "Москва", "27 800 ₽/м³", "01.08.2026", "Подтверждено"], ["Утеплитель 200 мм", "Петрович", "Москва", "980 ₽/м²", "31.07.2026", "Подтверждено"], ["Доставка", "Допущение проекта", "—", "14 500 ₽/рейс", "—", "Нужен источник"]];
+  return <section className="product-page"><div className="page-heading"><div><h1>Источники цен</h1><p>Поставщики, даты наблюдения, регион, единицы и НДС</p></div><button className="primary-button"><MagnifyingGlass size={17}/> Найти цены</button></div><div className="source-list">{sources.map(row=><article key={row[0]}>{row.map((cell,index)=><span key={cell}><small>{["Позиция","Источник","Регион","Цена","Дата","Статус"][index]}</small><strong className={index===5&&cell.includes("Нужен")?"warning-text":""}>{cell}</strong></span>)}</article>)}</div></section>;
 }

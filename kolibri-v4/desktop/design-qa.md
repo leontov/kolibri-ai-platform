@@ -12,11 +12,17 @@ Status: passed
 - Settings navigation, general settings, appearance, and assistants
 - Plugins catalog
 - Scheduled tasks
+- Kolibri-native projects overview
+- Editable construction estimate with deterministic totals and autosave feedback
+- Separate works, materials, services/delivery, reserve, and total summary
+- Price evidence coverage and honest preliminary status
+- Saved-revision document slots for estimate, commercial proposal, KС-2, KС-3, and contract
 
 ## Verification
 
 - Compared the running start screen and settings screen side by side with the supplied references.
 - Verified sidebar, right panel, settings, plugins, scheduled tasks, action cards, composer submission, and toggles in the browser.
+- Verified estimate row editing, deterministic recalculation, autosave feedback, project navigation, documents, and price-source screens.
 - Verified responsive overlay behavior below 900px.
 - Production build passed.
 - Sites worker tests passed: 4/4.
@@ -24,4 +30,4 @@ Status: passed
 ## Design notes
 
 - Preserved the quiet Codex-like hierarchy, pale navigation surface, thin borders, restrained shadows, and chat-first layout.
-- Replaced Codex-specific copy with Kolibri AI workflows for estimates, construction documents, projects, and automation.
+- Used Codex only as the shell and density reference. Navigation, actions, project state, estimate editor, evidence, documents, statuses, and terminology are Kolibri-native.

@@ -14,3 +14,6 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Keep the product chat-first: a quiet central prompt, four action cards, and a bottom composer on one axis.
 - The desktop sidebar pushes the workspace; below 900px it becomes an overlay.
 - Use Kolibri product language and restrained pale-blue navigation, thin borders, subtle shadows, and no dashboard widgets or gradients.
+- Codex supplies interaction density and shell behavior only. Product entities must remain Kolibri-native: universal projects and chat in Core; estimates, price evidence, revisions, KС-2/KС-3, and exports in the construction vertical.
+- Never label an estimate verified without sufficient inputs and source coverage. Show honest `needs input`, preliminary, source-backed, or verified states.
+- Estimate editing must recalculate totals deterministically and expose autosave, source coverage, assumptions, questions, revisions, and export from a saved revision.
