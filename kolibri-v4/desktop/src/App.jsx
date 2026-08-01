@@ -1,24 +1,21 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowCounterClockwise,
   ArrowLeft,
   ArrowRight,
   Bell,
   Bird,
-  Bug,
   Calculator,
   CaretDown,
   ChatCircle,
   CheckCircle,
   Clock,
-  Code,
   Database,
-  DownloadSimple,
   FileText,
   Folder,
   Gear,
-  GridFour,
-  Hammer,
+  House,
+  ListChecks,
   MagnifyingGlass,
   Microphone,
   PaperPlaneTilt,
@@ -28,11 +25,15 @@ import {
   SidebarSimple,
   SlidersHorizontal,
   Sparkle,
-  TerminalWindow,
   Table,
   X,
   Wrench,
 } from "@phosphor-icons/react";
+
+import { DocumentsWorkspace } from "./features/documents/DocumentsWorkspace.jsx";
+import { EstimateWorkspace } from "./features/estimate/EstimateWorkspace.jsx";
+import { DigitalOfficeRun, ProjectWorkspace, TechnologyWorkspace } from "./features/project/ProjectFlow.jsx";
+import { usePersistedState } from "./hooks/usePersistedState.js";
 
 const actions = [
   { icon: Calculator, color: "blue", text: "Составить смету по описанию или файлам", target: "estimate" },
@@ -57,11 +58,19 @@ export function App() {
   const [settings, setSettings] = useState(false);
   const [projectMenu, setProjectMenu] = useState(false);
   const [screen, setScreen] = useState("home");
+  const [projectStage, setProjectStage] = usePersistedState("kolibri-v4-project-stage", 1);
+  const workspaceRef = useRef(null);
+
+  useEffect(() => {
+    if (workspaceRef.current) workspaceRef.current.scrollTop = 0;
+  }, [screen, settings]);
 
   const submit = () => {
     const next = value.trim();
     if (!next) return;
     setSubmitted(next);
+    setCurrentProject("Дом 134 м² под ключ");
+    setProjectStage(1);
     setValue("");
   };
 
@@ -89,6 +98,8 @@ export function App() {
         <nav className="main-nav">
           <NavItem icon={PencilSimple} active={screen === "home" && !settings} onClick={() => { setScreen("home"); setSettings(false); setSubmitted(""); }}>Новый чат</NavItem>
           <NavItem icon={Folder} active={screen === "projects"} onClick={() => { setScreen("projects"); setSettings(false); }}>Проекты</NavItem>
+          <NavItem icon={House} active={screen === "project"} onClick={() => { setScreen("project"); setSettings(false); }}>Объект</NavItem>
+          <NavItem icon={ListChecks} active={screen === "technology"} onClick={() => { setScreen("technology"); setSettings(false); }}>Техкарта</NavItem>
           <NavItem icon={Calculator} active={screen === "estimate"} onClick={() => { setScreen("estimate"); setSettings(false); }}>Сметы</NavItem>
           <NavItem icon={FileText} active={screen === "documents"} onClick={() => { setScreen("documents"); setSettings(false); }}>Документы</NavItem>
           <NavItem icon={Database} active={screen === "sources"} onClick={() => { setScreen("sources"); setSettings(false); }}>Источники цен</NavItem>
@@ -114,15 +125,19 @@ export function App() {
 
       {sidebarOpen && <button className="sidebar-scrim" aria-label="Закрыть меню" onClick={() => setSidebarOpen(false)} />}
 
-      <main className="workspace">
+      <main className="workspace" ref={workspaceRef}>
         {settings ? (
           <Settings onClose={() => setSettings(false)} />
+        ) : screen === "project" ? (
+          <ProjectWorkspace stage={projectStage} onOpenTechnology={() => setScreen("technology")} />
+        ) : screen === "technology" ? (
+          <TechnologyWorkspace onCreateEstimate={() => { setProjectStage(Math.max(projectStage, 2)); setScreen("estimate"); }} />
         ) : screen === "estimate" ? (
-          <EstimateWorkspace project={currentProject} />
+          <EstimateWorkspace project={currentProject} stage={projectStage} onShare={() => { setProjectStage(Math.max(projectStage, 3)); setScreen("documents"); }} />
         ) : screen === "projects" ? (
           <ProjectsWorkspace onOpen={project => { setCurrentProject(project); setScreen("estimate"); }} />
         ) : screen === "documents" ? (
-          <DocumentsWorkspace project={currentProject} />
+          <DocumentsWorkspace project={currentProject} stage={projectStage} setStage={setProjectStage} />
         ) : screen === "sources" ? (
           <SourcesWorkspace />
         ) : screen === "plugins" ? (
@@ -143,11 +158,11 @@ export function App() {
             </div>
           </section>
         ) : (
-          <section className="conversation">
+          <section className="conversation office-conversation">
             <div className="conversation-icon"><Sparkle size={23} /></div>
             <h1>{currentProject}</h1>
             <div className="user-message">{submitted}</div>
-            <div className="assistant-message"><span className="thinking-dot" /> Приступаю. Сначала изучу проект и соберу точный план изменений.</div>
+            <DigitalOfficeRun onOpenProject={() => setScreen("project")} />
           </section>
         )}
 
@@ -255,33 +270,6 @@ function Scheduled() {
 function ProjectsWorkspace({ onOpen }) {
   const data = [["Дом 140 м² — кровля и фасад", "Москва", "Предварительная", "1 842 560 ₽"], ["Ремонт офиса 320 м²", "Санкт-Петербург", "Нужны данные", "—"], ["Фабрика Колибри", "Тверская область", "Источники проверены", "6 218 400 ₽"]];
   return <section className="product-page"><div className="page-heading"><div><h1>Проекты</h1><p>Объекты, чаты, сметы и связанные документы</p></div><button className="primary-button"><Plus size={17} /> Новый проект</button></div><label className="page-search"><MagnifyingGlass size={19} /><input placeholder="Найти проект" /></label><div className="project-table"><div className="table-head"><span>Проект</span><span>Регион</span><span>Статус сметы</span><span>Итого</span></div>{data.map(row => <button key={row[0]} onClick={() => onOpen(row[0])}>{row.map((cell,index)=><span key={cell} className={index===2?"status-text":""}>{cell}</span>)}</button>)}</div></section>;
-}
-
-function EstimateWorkspace({ project }) {
-  const [rows, setRows] = useState([
-    { id: 1, name: "Монтаж стропильной системы", unit: "м²", qty: 168, price: 1150, type: "Работа" },
-    { id: 2, name: "Пиломатериал хвойный, сорт 1", unit: "м³", qty: 8.4, price: 27800, type: "Материал" },
-    { id: 3, name: "Утеплитель минераловатный 200 мм", unit: "м²", qty: 152, price: 980, type: "Материал" },
-    { id: 4, name: "Доставка материалов", unit: "рейс", qty: 3, price: 14500, type: "Услуга" },
-  ]);
-  const [saveState, setSaveState] = useState("Сохранено");
-  const update = (id, field, value) => { setRows(items => items.map(row => row.id === id ? {...row, [field]: field === "name" ? value : Number(value)} : row)); setSaveState("Сохранение…"); setTimeout(() => setSaveState("Сохранено"), 500); };
-  const subtotal = kind => rows.filter(row => row.type === kind).reduce((sum,row)=>sum+row.qty*row.price,0);
-  const work = subtotal("Работа"), materials = subtotal("Материал"), services = subtotal("Услуга"), total = work+materials+services;
-  return <section className="estimate-page">
-    <header className="estimate-header"><div><button className="breadcrumb"><Folder size={15} /> {project}</button><h1>Смета на кровлю и фасад</h1><p><span className="status-badge preliminary">Предварительная</span> Версия 3 · {saveState}</p></div><div><button className="secondary-button">Ревизии</button><button className="secondary-button"><DownloadSimple size={17} /> Экспорт</button><button className="primary-button">Проверить смету</button></div></header>
-    <div className="estimate-tabs"><button className="active">Смета</button><button>Источники <span>3/4</span></button><button>Допущения <span>2</span></button><button>Вопросы <span>1</span></button></div>
-    <div className="estimate-notice"><CheckCircle size={19} /><span><strong>Расчёт выполнен детерминированно</strong><small>Итоги пересчитываются после каждого изменения. Для проверки нужен источник цены по доставке.</small></span></div>
-    <div className="estimate-sheet"><div className="estimate-row estimate-columns"><span>Позиция</span><span>Тип</span><span>Ед.</span><span>Количество</span><span>Цена</span><span>Сумма</span></div>{rows.map(row => <div className="estimate-row" key={row.id}><input value={row.name} onChange={e=>update(row.id,"name",e.target.value)} /><span className="row-type">{row.type}</span><span>{row.unit}</span><input type="number" value={row.qty} onChange={e=>update(row.id,"qty",e.target.value)} /><input type="number" value={row.price} onChange={e=>update(row.id,"price",e.target.value)} /><strong>{money(row.qty*row.price)}</strong></div>)}<button className="add-row" onClick={()=>setRows(items=>[...items,{id:Date.now(),name:"Новая позиция",unit:"шт.",qty:1,price:0,type:"Работа"}])}><Plus size={17} /> Добавить позицию</button></div>
-    <aside className="estimate-summary"><h2>Итоги</h2><div><span>Работы</span><strong>{money(work)}</strong></div><div><span>Материалы</span><strong>{money(materials)}</strong></div><div><span>Услуги и доставка</span><strong>{money(services)}</strong></div><div><span>Резерв</span><strong>не задан</strong></div><div className="grand-total"><span>Всего</span><strong>{money(total)}</strong></div><small>Без НДС · цены для Москвы · актуальность 01.08.2026</small></aside>
-  </section>;
-}
-
-const money = value => new Intl.NumberFormat("ru-RU", {style:"currency", currency:"RUB", maximumFractionDigits:0}).format(value);
-
-function DocumentsWorkspace({ project }) {
-  const docs = [["Смета", "Версия 3", "Готово к проверке"], ["Коммерческое предложение", "Не создано", "Создать из сметы"], ["Акт КС-2", "Не создано", "Выберите период работ"], ["Справка КС-3", "Не создано", "Создаётся после КС-2"], ["Договор", "Черновик", "Требует реквизиты"]];
-  return <section className="product-page"><div className="page-heading"><div><button className="breadcrumb"><Folder size={15} /> {project}</button><h1>Документы</h1><p>Формируются только из сохранённой рассчитанной ревизии сметы</p></div><button className="primary-button"><Plus size={17} /> Создать документ</button></div><div className="document-grid">{docs.map(([name,version,action])=><article key={name}><span className="document-icon"><FileText size={22}/></span><div><strong>{name}</strong><small>{version}</small></div><button className="secondary-button">{action}</button></article>)}</div></section>;
 }
 
 function SourcesWorkspace() {
