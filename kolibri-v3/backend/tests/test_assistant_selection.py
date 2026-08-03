@@ -19,9 +19,9 @@ from app.assistant_selection import (
     resolve_assistant_binding,
 )
 from app.database import connect_database, initialize_database, transaction
+from app.machine_skills import MachineSkillManifest
 from app.terminal_agent_registry import TERMINAL_AGENT_CATALOG_CAPABILITY_ID
 from app.terminal_agent_security import sha256_bytes
-from app.machine_skills import MachineSkillManifest
 
 
 def _runtime(profile: str = "codex-cli") -> DelegatingAgentRuntime:
@@ -125,6 +125,7 @@ def test_assistant_binding_is_durable_and_tenant_scoped(tmp_path: Path) -> None:
     database_url = tmp_path / "assistant.db"
     initialize_database(database_url)
     database = connect_database(database_url)
+    created_at = "2026-08-03T00:00:00+00:00"
     try:
         binding = resolve_assistant_binding(
             _registry(),
@@ -136,76 +137,61 @@ def test_assistant_binding_is_durable_and_tenant_scoped(tmp_path: Path) -> None:
         with transaction(database, immediate=True):
             database.execute(
                 """
+                INSERT INTO tenants (id, name, created_at)
+                VALUES (?, ?, ?)
+                """,
+                ("tenant_binding_test", "Binding Tenant", 1_775_000_000),
+            )
+            database.execute(
+                """
                 INSERT INTO users (
-                    id, email, name, password_hash, role,
+                    id, tenant_id, email_normalized, email, name, role,
+                    preferred_agent_profile, password_hash,
                     created_at, updated_at
-                ) VALUES (?, ?, ?, ?, 'user', ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, 'user', 'codex-cli', ?, ?, ?)
                 """,
                 (
                     "user_binding_test",
+                    "tenant_binding_test",
+                    "binding@example.test",
                     "binding@example.test",
                     "Binding Test",
                     "scrypt$placeholder",
-                    "2026-08-03T00:00:00+00:00",
-                    "2026-08-03T00:00:00+00:00",
-                ),
-            )
-            database.execute(
-                """
-                INSERT INTO organizations (
-                    id, name, created_at, updated_at
-                ) VALUES (?, ?, ?, ?)
-                """,
-                (
-                    "tenant_binding_test",
-                    "Binding Tenant",
-                    "2026-08-03T00:00:00+00:00",
-                    "2026-08-03T00:00:00+00:00",
-                ),
-            )
-            database.execute(
-                """
-                INSERT INTO organization_memberships (
-                    organization_id, user_id, role, created_at, updated_at
-                ) VALUES (?, ?, 'member', ?, ?)
-                """,
-                (
-                    "tenant_binding_test",
-                    "user_binding_test",
-                    "2026-08-03T00:00:00+00:00",
-                    "2026-08-03T00:00:00+00:00",
+                    1_775_000_000,
+                    1_775_000_000,
                 ),
             )
             database.execute(
                 """
                 INSERT INTO projects (
-                    tenant_id, id, name, status, created_by_user_id,
-                    created_at, updated_at
-                ) VALUES (?, ?, ?, 'active', ?, ?, ?)
+                    tenant_id, id, created_by_user_id, title, status,
+                    primary_thread_id, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, 'active', ?, ?, ?)
                 """,
                 (
                     "tenant_binding_test",
                     "project_binding_test",
-                    "Binding Project",
                     "user_binding_test",
-                    "2026-08-03T00:00:00+00:00",
-                    "2026-08-03T00:00:00+00:00",
+                    "Binding Project",
+                    "thread_binding_test",
+                    created_at,
+                    created_at,
                 ),
             )
             database.execute(
                 """
                 INSERT INTO chat_threads (
-                    tenant_id, id, project_id, title, status,
+                    tenant_id, id, project_id, kind, title, status,
                     message_count, run_count, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, 'regular', 0, 0, ?, ?)
+                ) VALUES (?, ?, ?, 'primary', ?, 'regular', 1, 1, ?, ?)
                 """,
                 (
                     "tenant_binding_test",
                     "thread_binding_test",
                     "project_binding_test",
                     "Binding Thread",
-                    "2026-08-03T00:00:00+00:00",
-                    "2026-08-03T00:00:00+00:00",
+                    created_at,
+                    created_at,
                 ),
             )
             database.execute(
@@ -224,7 +210,7 @@ def test_assistant_binding_is_durable_and_tenant_scoped(tmp_path: Path) -> None:
                     "client_message_binding_test",
                     "Create an estimate",
                     "user_binding_test",
-                    "2026-08-03T00:00:00+00:00",
+                    created_at,
                 ),
             )
             database.execute(
@@ -246,9 +232,9 @@ def test_assistant_binding_is_durable_and_tenant_scoped(tmp_path: Path) -> None:
                     "message_binding_test",
                     "user_binding_test",
                     "codex-cli",
-                    "2026-08-03T00:00:00+00:00",
-                    "2026-08-03T00:00:00+00:00",
-                    "2026-08-03T00:00:00+00:00",
+                    created_at,
+                    created_at,
+                    created_at,
                 ),
             )
             persist_assistant_binding(
@@ -256,7 +242,7 @@ def test_assistant_binding_is_durable_and_tenant_scoped(tmp_path: Path) -> None:
                 tenant_id="tenant_binding_test",
                 run_id="run_binding_test",
                 binding=binding,
-                created_at="2026-08-03T00:00:00+00:00",
+                created_at=created_at,
             )
 
         loaded = load_assistant_binding(
