@@ -17,6 +17,9 @@ concurrency:
   group: apply-v3-terminal-agent-platform-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
 jobs:
   apply:
     if: >-
@@ -35,8 +38,11 @@ jobs:
       - name: Apply guarded wiring patches
         run: |
           set -euo pipefail
+          workflow_copy="$RUNNER_TEMP/kolibri-v3.yml"
+          cp .github/workflows/kolibri-v3.yml "$workflow_copy"
           python kolibri-v3/scripts/apply-terminal-agent-platform.py
           python kolibri-v3/scripts/apply-assistant-selection-v2.py
+          cp "$workflow_copy" .github/workflows/kolibri-v3.yml
           cd kolibri-v3
           python server/generate_contract_manifest.py
 
@@ -58,6 +64,7 @@ jobs:
             kolibri-v3/backend/app/chat/models.py \
             kolibri-v3/backend/app/chat/execution_adapter.py \
             kolibri-v3/backend/app/chat/service.py
+          find kolibri-v3 -type d -name __pycache__ -prune -exec rm -rf {} +
           git diff --check
 
       - name: Commit the guarded wiring result
