@@ -62,6 +62,15 @@
         },
         "accessMode": {
           "$ref": "#/$defs/accessMode"
+        },
+        "assistantId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9_.:-]{2,127}$"
         }
       },
       "allOf": [

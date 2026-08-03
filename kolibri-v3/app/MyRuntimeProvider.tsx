@@ -43,6 +43,11 @@ import type {
 } from "@/lib/product-chat/contracts";
 import { useIdentity } from "@/lib/identity/provider";
 import {
+  loadTerminalAssistantCatalog,
+  type TerminalAssistant,
+} from "@/lib/assistants/catalog";
+import { AssistantSelectionProvider } from "@/lib/assistants/selection-context";
+import {
   DeveloperAgentModeContext,
   type DeveloperAccessMode,
 } from "@/lib/product-chat/developer-agent-mode";
@@ -93,10 +98,55 @@ function ProductChatRuntimeScope({
     useState<DeveloperAccessMode>("standard");
   const developerAccessModeRef = useRef(developerAccessMode);
   developerAccessModeRef.current = developerAccessMode;
+  const [assistantStatus, setAssistantStatus] = useState<
+    "inactive" | "loading" | "ready" | "error"
+  >(authenticated ? "loading" : "inactive");
+  const [assistants, setAssistants] = useState<
+    readonly TerminalAssistant[]
+  >([]);
+  const [selectedAssistantId, setSelectedAssistantId] =
+    useState<string | null>(null);
+  const selectedAssistantIdRef = useRef(selectedAssistantId);
+  selectedAssistantIdRef.current = selectedAssistantId;
 
   useEffect(() => {
     if (!developerAgentAvailable) setDeveloperAccessMode("standard");
   }, [developerAgentAvailable]);
+
+  useEffect(() => {
+    if (!authenticated) {
+      setAssistantStatus("inactive");
+      setAssistants([]);
+      setSelectedAssistantId(null);
+      return;
+    }
+    let current = true;
+    setAssistantStatus("loading");
+    void loadTerminalAssistantCatalog()
+      .then((catalog) => {
+        if (!current) return;
+        setAssistants(catalog.assistants);
+        setSelectedAssistantId((selected) =>
+          catalog.assistants.some(
+            (assistant) =>
+              assistant.assistantId === selected &&
+              assistant.availability === "available",
+          )
+            ? selected
+            : null,
+        );
+        setAssistantStatus("ready");
+      })
+      .catch(() => {
+        if (!current) return;
+        setAssistants([]);
+        setSelectedAssistantId(null);
+        setAssistantStatus("error");
+      });
+    return () => {
+      current = false;
+    };
+  }, [authenticated]);
 
   const initialProjection = authenticated
     ? { ...INACTIVE_PROJECTION, status: "loading" as const }
@@ -116,6 +166,7 @@ function ProductChatRuntimeScope({
         url: PRODUCT_AG_UI_BFF_URL,
         headers: { Accept: "text/event-stream" },
         fetch: createProductAgUiFetch({
+          getAssistantId: () => selectedAssistantIdRef.current,
           getAgentProfile: () => profileRef.current,
           getExecutionMode: () =>
             developerAccessModeRef.current === "standard"
@@ -477,12 +528,21 @@ function ProductChatRuntimeScope({
           }),
       }}
     >
-      <AssistantRuntimeProvider runtime={runtime}>
-        <GeneratedImageToolUI />
-        <WeatherToolUI />
-        <DeveloperActivityToolUIs />
-        {children}
-      </AssistantRuntimeProvider>
+      <AssistantSelectionProvider
+        value={{
+          status: assistantStatus,
+          assistants,
+          selectedAssistantId,
+          setSelectedAssistantId,
+        }}
+      >
+        <AssistantRuntimeProvider runtime={runtime}>
+          <GeneratedImageToolUI />
+          <WeatherToolUI />
+          <DeveloperActivityToolUIs />
+          {children}
+        </AssistantRuntimeProvider>
+      </AssistantSelectionProvider>
     </DeveloperAgentModeContext.Provider>
   );
 }

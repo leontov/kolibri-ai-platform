@@ -96,7 +96,7 @@
     },
     {
       "schema_uri": "https://schemas.kolibriai.ru/v3/contracts/v1/chat/ag-ui-run-input.schema.json",
-      "sha256": "eb167834ab6593447924c74f739bf4c72d8efab3e64b9b91c37648b17828e084",
+      "sha256": "3d9631ac0dd6982d4bdad3450c6e9f010db2808b627d4766a90092d26501c75b",
       "source_path": "contracts/v1/chat/ag-ui-run-input.schema.json"
     },
     {

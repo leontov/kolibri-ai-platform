@@ -398,6 +398,7 @@ def test_migration_38_backfills_running_direct_as_expired_lease(
     try:
         database.execute("DROP TABLE direct_run_outbox")
         database.execute("DROP TABLE runtime_worker_heartbeats")
+        database.execute("DROP TABLE chat_run_assistant_bindings")
         database.execute("PRAGMA user_version = 38")
     finally:
         database.close()

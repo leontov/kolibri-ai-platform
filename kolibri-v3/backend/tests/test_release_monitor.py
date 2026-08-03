@@ -50,7 +50,7 @@ def _arguments(tmp_path: Path):
             "--release-commit",
             RELEASE_COMMIT,
             "--expected-schema",
-            "44",
+            "45",
             "--backend-unit",
             "kolibri-v3-backend.service",
             "--frontend-unit",
@@ -118,7 +118,7 @@ def test_monitor_reports_only_bounded_aggregate_release_metrics(
     assert result["alerts"] == []
     assert result["releaseId"] == RELEASE_ID
     assert result["releaseCommit"] == RELEASE_COMMIT
-    assert result["metrics"]["schemaVersion"] == 44
+    assert result["metrics"]["schemaVersion"] == 45
     assert result["metrics"]["stuckRuns"] == 0
     assert result["metrics"]["errorRateBps"] == 100
     serialized = str(result)

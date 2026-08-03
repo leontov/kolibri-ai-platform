@@ -17,6 +17,7 @@ export const PRODUCT_AG_UI_BFF_URL = "/api/agui";
 const MAX_JSON_RESPONSE_BYTES = 2 * 1_024 * 1_024;
 const MAX_AG_UI_REQUEST_BYTES = 2 * 1_024 * 1_024;
 const SAFE_SHORT_RUN_ID = /^[A-Za-z0-9][A-Za-z0-9._~-]{0,123}$/;
+const SAFE_ASSISTANT_ID = /^[a-z][a-z0-9_.:-]{2,127}$/;
 const defaultFetch: typeof fetch = (...args) => globalThis.fetch(...args);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -424,6 +425,7 @@ const parseAgUiRequestBody = (
 
 export type ProductAgUiFetchOptions = {
   readonly fetch?: typeof fetch;
+  readonly getAssistantId: () => string | null;
   readonly getAgentProfile: () => KolibriAgentProfile;
   readonly getExecutionMode: () => KolibriExecutionMode;
   readonly getAccessMode: () => KolibriAccessMode;
@@ -438,6 +440,7 @@ export type ProductAgUiFetchOptions = {
  */
 export const createProductAgUiFetch = ({
   fetch: fetchImpl = defaultFetch,
+  getAssistantId,
   getAgentProfile,
   getExecutionMode,
   getAccessMode,
@@ -452,6 +455,12 @@ export const createProductAgUiFetch = ({
     }
 
     const body = parseAgUiRequestBody(init?.body);
+    const assistantId = getAssistantId();
+    if (assistantId !== null && !SAFE_ASSISTANT_ID.test(assistantId)) {
+      throw new ProductChatContractError(
+        "Invalid Kolibri assistant ID.",
+      );
+    }
     const profile = getAgentProfile();
     if (!isKolibriAgentProfile(profile)) {
       throw new ProductChatContractError("Invalid Kolibri agent profile.");
@@ -517,6 +526,9 @@ export const createProductAgUiFetch = ({
         tools: [],
         context: [],
         forwardedProps: {
+          // This identifier is only a preference. Product/Data resolves
+          // and freezes runtime, node, skills and their manifest hashes.
+          ...(assistantId === null ? {} : { assistantId }),
           // Developer mode is a browser request hint, never an authority
           // claim. The backend independently verifies the HttpOnly session,
           // owner role, server feature gate, workspace and sandbox policy.
