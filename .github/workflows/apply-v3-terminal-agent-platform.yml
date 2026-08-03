@@ -4,31 +4,39 @@ on:
   push:
     branches:
       - factory/v3-terminal-agent-platform
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 permissions:
   contents: write
 
 concurrency:
-  group: apply-v3-terminal-agent-platform
+  group: apply-v3-terminal-agent-platform-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
   apply:
-    if: github.actor != 'github-actions[bot]'
+    if: >-
+      github.actor != 'github-actions[bot]' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout branch
+      - name: Checkout exact head branch
         uses: actions/checkout@v4
         with:
-          ref: factory/v3-terminal-agent-platform
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           fetch-depth: 0
 
       - name: Apply guarded wiring patches
         run: |
           set -euo pipefail
           python kolibri-v3/scripts/apply-terminal-agent-platform.py
-          python kolibri-v3/scripts/apply-assistant-selection.py
+          python kolibri-v3/scripts/apply-assistant-selection-v2.py
           cd kolibri-v3
           python server/generate_contract_manifest.py
 
@@ -45,6 +53,7 @@ jobs:
             kolibri-v3/backend/app/terminal_provider_execution.py \
             kolibri-v3/backend/app/assistants.py \
             kolibri-v3/backend/tests/test_terminal_agent_platform.py \
+            kolibri-v3/backend/tests/test_assistant_selection.py \
             kolibri-v3/backend/app/main.py \
             kolibri-v3/backend/app/chat/models.py \
             kolibri-v3/backend/app/chat/execution_adapter.py \
