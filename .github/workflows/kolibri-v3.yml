@@ -258,7 +258,9 @@ jobs:
             kolibri-v3/backend/requirements-dev.txt
 
       - name: Install release test dependencies
-        run: python -m pip install -r backend/requirements-dev.txt
+        run: |
+          npm ci
+          python -m pip install -r backend/requirements-dev.txt
 
       - name: Check self-contained contract manifest
         run: python server/generate_contract_manifest.py --check
