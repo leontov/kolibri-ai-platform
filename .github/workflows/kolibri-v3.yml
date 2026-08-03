@@ -311,6 +311,9 @@ jobs:
             --output-dir "$unit_root" \
             --instance kolibri-v3 \
             --current-link "$runtime_root" \
+            --service-user "$(id -un)" \
+            --service-group "$(id -gn)" \
+            --service-uid "$(id -u)" \
             --data-root "$data_root" \
             --backup-root "$backup_root" \
             --backend-port 8002 \
