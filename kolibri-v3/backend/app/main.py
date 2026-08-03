@@ -19,12 +19,13 @@ from fastapi.responses import JSONResponse
 from .agent_operations import router as agent_operations_router
 from .agent_runtime import AgentRuntimeRegistry
 from .attachments import router as attachments_router
+from .assistants import router as assistants_router
 from .config import Settings
 from .chat.cancellation import ActiveRunCancellationRegistry
 from .chat.execution_adapter import DirectRunDispatcher
 from .chat.router import router as chat_router
 from .database import connect_database, initialize_database, migration_paths
-from .direct_model_runtime import build_agent_runtime_registry
+from .terminal_agent_registry import build_agent_runtime_registry
 from .document_catalog import router as document_catalog_router
 from .identity import router as identity_router
 from .image_generation import (
@@ -55,6 +56,9 @@ from .storage_node_executor import (
 )
 from .storage_node_rust_adapter import build_storage_node_executor
 from .trusted_agent_control import router as trusted_agent_control_router
+from .terminal_provider_execution import (
+    TerminalProviderExecutionService,
+)
 
 
 NO_STORE_HEADERS = {
@@ -160,7 +164,7 @@ def create_app(
             app.state.provider_execution_security = (
                 ProviderExecutionSecurity.from_settings(configured)
             )
-            app.state.provider_execution_service = ProviderExecutionService(
+            app.state.provider_execution_service = TerminalProviderExecutionService(
                 settings=configured,
                 runtime_registry=agent_runtimes,
             )
@@ -473,6 +477,7 @@ def create_app(
         return base
 
     app.include_router(identity_router)
+    app.include_router(assistants_router)
     app.include_router(attachments_router)
     app.include_router(generated_artifacts_router)
     app.include_router(chat_router)
