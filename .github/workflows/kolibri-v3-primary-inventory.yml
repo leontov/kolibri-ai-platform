@@ -3,8 +3,7 @@ name: Kolibri V3 Primary Inventory
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    branches:
-      - fix/v3-portable-release-typescript-install
+    branches: [main]
   workflow_dispatch:
 
 permissions:
