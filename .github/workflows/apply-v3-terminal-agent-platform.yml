@@ -16,7 +16,7 @@ jobs:
   apply:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
@@ -24,22 +24,31 @@ jobs:
           ref: factory/v3-terminal-agent-platform
           fetch-depth: 0
 
-      - name: Apply guarded wiring patch
-        run: python kolibri-v3/scripts/apply-terminal-agent-platform.py
+      - name: Apply guarded wiring patches
+        run: |
+          set -euo pipefail
+          python kolibri-v3/scripts/apply-terminal-agent-platform.py
+          python kolibri-v3/scripts/apply-assistant-selection.py
+          cd kolibri-v3
+          python server/generate_contract_manifest.py
 
-      - name: Check Python syntax and patch hygiene
+      - name: Check syntax and patch hygiene
         run: |
           set -euo pipefail
           python -m compileall -q \
             kolibri-v3/backend/app/terminal_agent_security.py \
             kolibri-v3/backend/app/machine_skills.py \
             kolibri-v3/backend/app/assistant_catalog.py \
+            kolibri-v3/backend/app/assistant_selection.py \
             kolibri-v3/backend/app/terminal_agent_config.py \
             kolibri-v3/backend/app/terminal_agent_registry.py \
             kolibri-v3/backend/app/terminal_provider_execution.py \
             kolibri-v3/backend/app/assistants.py \
             kolibri-v3/backend/tests/test_terminal_agent_platform.py \
-            kolibri-v3/backend/app/main.py
+            kolibri-v3/backend/app/main.py \
+            kolibri-v3/backend/app/chat/models.py \
+            kolibri-v3/backend/app/chat/execution_adapter.py \
+            kolibri-v3/backend/app/chat/service.py
           git diff --check
 
       - name: Commit the guarded wiring result
@@ -50,6 +59,6 @@ jobs:
           fi
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add kolibri-v3/backend/app/main.py
-          git commit -m "feat(v3): wire terminal agent platform into backend"
+          git add -A
+          git commit -m "feat(v3): bind dynamic assistants to durable runs"
           git push origin HEAD:factory/v3-terminal-agent-platform
