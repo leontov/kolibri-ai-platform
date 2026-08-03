@@ -258,7 +258,9 @@ jobs:
             kolibri-v3/backend/requirements-dev.txt
 
       - name: Install release test dependencies
-        run: python -m pip install -r backend/requirements-dev.txt
+        run: |
+          npm ci
+          python -m pip install -r backend/requirements-dev.txt
 
       - name: Check self-contained contract manifest
         run: python server/generate_contract_manifest.py --check
@@ -309,6 +311,9 @@ jobs:
             --output-dir "$unit_root" \
             --instance kolibri-v3 \
             --current-link "$runtime_root" \
+            --service-user "$(id -un)" \
+            --service-group "$(id -gn)" \
+            --service-uid "$(id -u)" \
             --data-root "$data_root" \
             --backup-root "$backup_root" \
             --backend-port 8002 \

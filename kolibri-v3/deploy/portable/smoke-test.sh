@@ -30,6 +30,10 @@ cleanup() {
   [[ -z "$product_worker_pid" ]] ||
     kill "$product_worker_pid" 2>/dev/null || true
   [[ -z "$backend_pid" ]] || kill "$backend_pid" 2>/dev/null || true
+  [[ -z "$frontend_pid" ]] || wait "$frontend_pid" 2>/dev/null || true
+  [[ -z "$product_worker_pid" ]] ||
+    wait "$product_worker_pid" 2>/dev/null || true
+  [[ -z "$backend_pid" ]] || wait "$backend_pid" 2>/dev/null || true
   rm -rf -- "$work_root"
 }
 trap cleanup EXIT
