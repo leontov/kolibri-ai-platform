@@ -9,7 +9,7 @@ from typing import Any
 
 from .agent_runtime import AgentRuntimeRegistry
 from .assistant_catalog import AssistantManifest, TerminalAgentCatalog
-from .terminal_agent_registry import TERMINAL_AGENT_CATALOG_CAPABILITY_ID
+from .terminal_agent_constants import TERMINAL_AGENT_CATALOG_CAPABILITY_ID
 from .terminal_agent_security import HASH_PATTERN, IDENTIFIER_PATTERN
 
 
