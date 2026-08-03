@@ -1,11 +1,11 @@
 {
-  "contract_count": 71,
+  "contract_count": 72,
   "generator_version": "1.0",
   "outputs": [
     "generated/contracts-v1.ts",
     "server/contracts_runtime.py"
   ],
-  "schema_count": 91,
+  "schema_count": 92,
   "schema_id": "kolibri.generated_contract_package_manifest",
   "schema_version": "1.0",
   "schemas": [
@@ -293,6 +293,11 @@
       "schema_uri": "https://schemas.kolibriai.ru/v1/product/provider-enrollment-status.schema.json",
       "sha256": "b7f93470f48acfde9daa613c8aa44e3a64fc01b2d8b1b96b8911de94a637bbaf",
       "source_path": "contracts/v1/product/provider-enrollment-status.schema.json"
+    },
+    {
+      "schema_uri": "https://schemas.kolibriai.ru/v1/product/public-run-event-v2.schema.json",
+      "sha256": "59bc0543cfce4a16cd60e967894e0d4921979d3738d3ac85001b40e6d45eb800",
+      "source_path": "contracts/v1/product/public-run-event-v2.schema.json"
     },
     {
       "schema_uri": "https://schemas.kolibriai.ru/v1/product/run-event.schema.json",
