@@ -15,6 +15,11 @@ import uuid
 from fastapi import HTTPException, Request, status
 
 from ..agent_runtime import AgentRuntimeRegistry
+from ..assistant_selection import (
+    AssistantSelectionError,
+    ResolvedAssistantBinding,
+    resolve_assistant_binding,
+)
 from ..config import Settings
 from ..direct_model_runtime import execute_direct_run
 from ..direct_run_outbox import (
@@ -54,6 +59,7 @@ class PreparedChatExecution:
     model_id: str | None
     reasoning_effort: str | None
     service_tier: str | None
+    assistant_binding: ResolvedAssistantBinding | None = None
 
 
 class AcceptedRunLike(Protocol):
@@ -256,9 +262,26 @@ def prepare_chat_execution(
     """
 
     execution_mode = run_input.forwarded_props.execution_mode
+    try:
+        assistant_binding = resolve_assistant_binding(
+            request.app.state.agent_runtime_registry,
+            assistant_id=run_input.forwarded_props.assistant_id,
+            execution_mode=execution_mode,
+            access_mode=run_input.forwarded_props.access_mode,
+        )
+    except AssistantSelectionError as exc:
+        raise _error(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            exc.code,
+            exc.message,
+        ) from exc
     runtime_profile = (
-        run_input.forwarded_props.agent_profile
-        or identity.preferred_agent_profile.value
+        assistant_binding.runtime_profile
+        if assistant_binding is not None
+        else (
+            run_input.forwarded_props.agent_profile
+            or identity.preferred_agent_profile.value
+        )
     )
     model_id, reasoning_effort, service_tier = _selection(
         identity,
@@ -324,9 +347,13 @@ def prepare_chat_execution(
         tenant_id=identity.tenant_id,
         profile=profile,
     )
-    required_runtime_mode = _required_runtime_mode(
-        execution_mode=execution_mode,
-        prompt=message_text(current_message),
+    required_runtime_mode = (
+        "chat"
+        if assistant_binding is not None and execution_mode == "standard"
+        else _required_runtime_mode(
+            execution_mode=execution_mode,
+            prompt=message_text(current_message),
+        )
     )
     if (
         profile_catalog is not None
@@ -392,6 +419,7 @@ def prepare_chat_execution(
         model_id=model_id,
         reasoning_effort=reasoning_effort,
         service_tier=service_tier,
+        assistant_binding=assistant_binding,
     )
 
 

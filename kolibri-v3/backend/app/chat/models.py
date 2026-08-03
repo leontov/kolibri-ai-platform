@@ -34,6 +34,15 @@ AgentProfile: TypeAlias = Annotated[
 ]
 ExecutionMode = Literal["standard", "developer"]
 AccessMode = Literal["standard", "auto", "full"]
+AssistantId: TypeAlias = Annotated[
+    str,
+    StringConstraints(
+        strict=True,
+        min_length=3,
+        max_length=128,
+        pattern=r"^[a-z][a-z0-9_.:-]{2,127}$",
+    ),
+]
 
 
 class StrictModel(BaseModel):
@@ -160,6 +169,10 @@ AgUiMessage = Annotated[
 
 
 class ForwardedProps(StrictModel):
+    assistant_id: AssistantId | None = Field(
+        default=None,
+        alias="assistantId",
+    )
     agent_profile: AgentProfile | None = Field(
         default=None,
         alias="agentProfile",
@@ -249,6 +262,9 @@ def message_attachment_parts(
 
 def canonical_run_payload(run_input: AgUiRunInput) -> dict[str, Any]:
     payload = run_input.model_dump(mode="json", by_alias=True)
+    assistant_was_omitted = (
+        "assistant_id" not in run_input.forwarded_props.model_fields_set
+    )
     access_was_omitted = (
         "access_mode" not in run_input.forwarded_props.model_fields_set
     )
@@ -256,8 +272,10 @@ def canonical_run_payload(run_input: AgUiRunInput) -> dict[str, Any]:
         run_input.forwarded_props.execution_mode == "standard"
         and run_input.forwarded_props.access_mode == "standard"
     )
-    if access_was_omitted or explicit_standard_access:
-        forwarded_props = payload.get("forwardedProps")
-        if isinstance(forwarded_props, dict):
+    forwarded_props = payload.get("forwardedProps")
+    if isinstance(forwarded_props, dict):
+        if assistant_was_omitted:
+            forwarded_props.pop("assistantId", None)
+        if access_was_omitted or explicit_standard_access:
             forwarded_props.pop("accessMode", None)
     return payload

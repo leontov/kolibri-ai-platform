@@ -1,11 +1,11 @@
 {
-  "contract_count": 70,
+  "contract_count": 73,
   "generator_version": "1.0",
   "outputs": [
     "generated/contracts-v1.ts",
     "server/contracts_runtime.py"
   ],
-  "schema_count": 90,
+  "schema_count": 93,
   "schema_id": "kolibri.generated_contract_package_manifest",
   "schema_version": "1.0",
   "schemas": [
@@ -96,7 +96,7 @@
     },
     {
       "schema_uri": "https://schemas.kolibriai.ru/v3/contracts/v1/chat/ag-ui-run-input.schema.json",
-      "sha256": "eb167834ab6593447924c74f739bf4c72d8efab3e64b9b91c37648b17828e084",
+      "sha256": "3d9631ac0dd6982d4bdad3450c6e9f010db2808b627d4766a90092d26501c75b",
       "source_path": "contracts/v1/chat/ag-ui-run-input.schema.json"
     },
     {
@@ -210,6 +210,11 @@
       "source_path": "contracts/v1/product/agui-projection.schema.json"
     },
     {
+      "schema_uri": "https://schemas.kolibriai.ru/v1/product/artifact-envelope-v1.schema.json",
+      "sha256": "b25795115d87c62c8bcd254ca1e51f4c450fcddb3b42cf2ffbe1163bda0042df",
+      "source_path": "contracts/v1/product/artifact-envelope-v1.schema.json"
+    },
+    {
       "schema_uri": "https://schemas.kolibriai.ru/v1/product/attachment.schema.json",
       "sha256": "e7dd544743ceb73a7476a06c9281cd44c43857848210d7422abe3eaa82c07419",
       "source_path": "contracts/v1/product/attachment.schema.json"
@@ -290,6 +295,11 @@
       "source_path": "contracts/v1/product/provider-enrollment-status.schema.json"
     },
     {
+      "schema_uri": "https://schemas.kolibriai.ru/v1/product/public-run-event-v2.schema.json",
+      "sha256": "59bc0543cfce4a16cd60e967894e0d4921979d3738d3ac85001b40e6d45eb800",
+      "source_path": "contracts/v1/product/public-run-event-v2.schema.json"
+    },
+    {
       "schema_uri": "https://schemas.kolibriai.ru/v1/product/run-event.schema.json",
       "sha256": "ffaa48736e93784839f22c1096ceb9474c9ad35a5b942a2d59e25e9cd4ddb45c",
       "source_path": "contracts/v1/product/run-event.schema.json"
@@ -323,6 +333,11 @@
       "schema_uri": "https://schemas.kolibriai.ru/v1/product/run-execution-status.schema.json",
       "sha256": "8b11f78605c8e4908918728e7688c3a506c243bd293f371068e7a8ae9d58a8ee",
       "source_path": "contracts/v1/product/run-execution-status.schema.json"
+    },
+    {
+      "schema_uri": "https://schemas.kolibriai.ru/v1/product/run-request-v2.schema.json",
+      "sha256": "f6d1a85bcf3cba97727b180cb29a19906564b11ec7078c750711e9521eceffa1",
+      "source_path": "contracts/v1/product/run-request-v2.schema.json"
     },
     {
       "schema_uri": "https://schemas.kolibriai.ru/v1/product/run.schema.json",

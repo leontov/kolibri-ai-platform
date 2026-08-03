@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Mapping
 
+from ..assistant_selection import persist_assistant_binding
 from ..attachment_service import (
     AttachmentConflictError,
     AttachmentMetadataError,
@@ -1444,6 +1445,14 @@ def accept_run(
                     ),
                 ),
             )
+            if prepared.assistant_binding is not None:
+                persist_assistant_binding(
+                    database,
+                    tenant_id=identity.tenant_id,
+                    run_id=run_id,
+                    binding=prepared.assistant_binding,
+                    created_at=created_at,
+                )
             # A runtime skill is reviewed server-owned guidance, not a
             # browser-selected prompt and not an AgentAssignment.  Recording
             # it with the accepted run freezes the exact constraints used by
@@ -1451,6 +1460,7 @@ def accept_run(
             if (
                 estimate_owned_model_policy
                 and execution_mode != "developer"
+                and prepared.assistant_binding is None
             ):
                 persist_runtime_skill_plan(
                     database,

@@ -5,6 +5,7 @@ import {
   UserMessageAttachments,
 } from "@/components/assistant-ui/attachment";
 import { AgentProfileSelector } from "@/components/assistant-ui/agent-profile-selector";
+import { AssistantSelector } from "@/components/assistant-ui/assistant-selector";
 import { ThreadFollowupSuggestions } from "@/components/assistant-ui/follow-up-suggestions";
 import { KolibriGenerativeUI } from "@/components/assistant-ui/generative-ui-renderer";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
@@ -543,6 +544,7 @@ const ComposerAction: FC = () => {
             <LayoutDashboardIcon className="size-[17px] stroke-[1.7px]" />
           </TooltipIconButton>
         ) : null}
+        {authenticated ? <AssistantSelector compact={compact} /> : null}
         {authenticated && !compact ? (
           <AgentProfileSelector control="developer" />
         ) : null}
