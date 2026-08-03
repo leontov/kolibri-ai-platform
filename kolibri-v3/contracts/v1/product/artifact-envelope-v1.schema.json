@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.kolibriai.ru/v1/product/artifact-envelope-v1.schema.json",
+  "title": "Kolibri provider-neutral artifact envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id", "schema_version", "artifact_id", "tenant_id", "project_id",
+    "thread_id", "run_id", "type", "document_id", "schema_ref", "title",
+    "mime_type", "content_ref", "preview_ref", "content_hash", "size_bytes",
+    "created_at", "created_by_agent", "node_id", "runtime_profile",
+    "assistant_id", "skills", "source_references", "editable", "version",
+    "status", "validation_results"
+  ],
+  "properties": {
+    "schema_id": {"const": "kolibri.artifact_envelope"},
+    "schema_version": {"const": "1.0"},
+    "artifact_id": {"$ref": "#/definitions/opaque_id"},
+    "tenant_id": {"$ref": "#/definitions/opaque_id"},
+    "project_id": {"$ref": "#/definitions/opaque_id"},
+    "thread_id": {"$ref": "#/definitions/opaque_id"},
+    "run_id": {"$ref": "#/definitions/opaque_id"},
+    "type": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z][a-z0-9._-]{0,63}$"},
+    "document_id": {"$ref": "#/definitions/opaque_id"},
+    "schema_ref": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_id", "schema_version"],
+      "properties": {
+        "schema_id": {"type": "string", "minLength": 3, "maxLength": 160, "pattern": "^[a-z][a-z0-9._-]{2,159}$"},
+        "schema_version": {"type": "string", "minLength": 1, "maxLength": 32, "pattern": "^[0-9]+(?:\\.[0-9]+){0,2}$"}
+      }
+    },
+    "title": {"type": "string", "minLength": 1, "maxLength": 240},
+    "mime_type": {"type": "string", "minLength": 3, "maxLength": 160, "pattern": "^[a-z0-9.+-]+/[a-z0-9.+-]+$"},
+    "content_ref": {"$ref": "#/definitions/immutable_ref"},
+    "preview_ref": {"oneOf": [{"$ref": "#/definitions/immutable_ref"}, {"type": "null"}]},
+    "content_hash": {"$ref": "#/definitions/sha256"},
+    "size_bytes": {"type": "integer", "minimum": 0, "maximum": 5368709120},
+    "created_at": {"type": "string", "format": "date-time"},
+    "created_by_agent": {"type": "string", "minLength": 2, "maxLength": 96, "pattern": "^[a-z0-9][a-z0-9._-]{1,95}$"},
+    "node_id": {"type": "string", "minLength": 2, "maxLength": 96, "pattern": "^[a-z0-9][a-z0-9._-]{1,95}$"},
+    "runtime_profile": {"type": "string", "minLength": 2, "maxLength": 96, "pattern": "^[a-z0-9][a-z0-9._-]{1,95}$"},
+    "assistant_id": {"type": "string", "minLength": 2, "maxLength": 96, "pattern": "^[a-z0-9][a-z0-9._-]{1,95}$"},
+    "skills": {
+      "type": "array", "maxItems": 64, "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["skill_id", "version", "content_hash"],
+        "properties": {
+          "skill_id": {"type": "string", "minLength": 2, "maxLength": 96, "pattern": "^[a-z0-9][a-z0-9._-]{1,95}$"},
+          "version": {"type": "string", "minLength": 1, "maxLength": 64},
+          "content_hash": {"$ref": "#/definitions/sha256"}
+        }
+      }
+    },
+    "source_references": {"type": "array", "maxItems": 256, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 2048}},
+    "editable": {"type": "boolean"},
+    "version": {"type": "integer", "minimum": 1},
+    "status": {"type": "string", "enum": ["draft", "validated", "verified", "rejected", "superseded"]},
+    "validation_results": {
+      "type": "array", "maxItems": 128,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["validator_id", "status", "checked_at", "evidence_hash"],
+        "properties": {
+          "validator_id": {"type": "string", "minLength": 2, "maxLength": 96, "pattern": "^[a-z0-9][a-z0-9._-]{1,95}$"},
+          "status": {"type": "string", "enum": ["passed", "failed", "warning"]},
+          "checked_at": {"type": "string", "format": "date-time"},
+          "evidence_hash": {"$ref": "#/definitions/sha256"},
+          "code": {"type": ["string", "null"], "maxLength": 96}
+        }
+      }
+    }
+  },
+  "definitions": {
+    "opaque_id": {"type": "string", "minLength": 8, "maxLength": 160, "pattern": "^[a-z][a-z0-9_]{1,31}_[A-Za-z0-9][A-Za-z0-9._~-]{5,127}$"},
+    "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "immutable_ref": {"type": "string", "minLength": 12, "maxLength": 2048, "pattern": "^artifact://[a-zA-Z0-9._~/-]+$"}
+  }
+}
