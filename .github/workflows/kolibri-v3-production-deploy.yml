@@ -1,0 +1,182 @@
+name: Kolibri V3 Production Deploy
+
+on:
+  workflow_run:
+    workflows:
+      - Kolibri V3
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Exact successful Kolibri V3 main commit to deploy
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: kolibri-v3-production
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "24.18.0"
+
+jobs:
+  deploy:
+    name: Deploy Kolibri V3 to production
+    if: >-
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 45
+
+    steps:
+      - name: Resolve release commit
+        id: release
+        shell: bash
+        env:
+          DISPATCH_SHA: ${{ inputs.release_sha }}
+          WORKFLOW_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          sha="${DISPATCH_SHA:-$WORKFLOW_SHA}"
+          if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "release_error=invalid_release_sha" >&2
+            exit 2
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout exact release source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Install release tooling
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build and verify exact immutable release
+        id: package
+        working-directory: kolibri-v3
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ steps.release.outputs.sha }}"
+          release_dir="$RUNNER_TEMP/kolibri-v3-production-release"
+          mkdir -p "$release_dir"
+          ./deploy/portable/build-release.sh "$release_dir" | tee "$release_dir/build.env"
+          archive="$(awk -F= '$1 == "release_archive" {print $2; exit}' "$release_dir/build.env")"
+          manifest="${archive}.manifest.json"
+          checksum="${archive}.sha256"
+          test -s "$archive"
+          test -s "$manifest"
+          test -s "$checksum"
+          python deploy/portable/release-manifest.py verify --archive "$archive"
+          echo "archive=$archive" >> "$GITHUB_OUTPUT"
+          echo "manifest=$manifest" >> "$GITHUB_OUTPUT"
+          echo "checksum=$checksum" >> "$GITHUB_OUTPUT"
+
+      - name: Validate production connection configuration
+        shell: bash
+        env:
+          PROD_HOST: ${{ secrets.KOLIBRI_PROD_HOST }}
+          PROD_USER: ${{ secrets.KOLIBRI_PROD_USER }}
+          PROD_KEY: ${{ secrets.KOLIBRI_PROD_SSH_PRIVATE_KEY }}
+          PROD_CONFIG: ${{ secrets.KOLIBRI_PROD_CONFIG_PATH }}
+        run: |
+          set -euo pipefail
+          for name in PROD_HOST PROD_USER PROD_KEY PROD_CONFIG; do
+            if [[ -z "${!name}" ]]; then
+              echo "release_error=missing_production_secret secret=$name" >&2
+              exit 2
+            fi
+          done
+
+      - name: Configure SSH
+        shell: bash
+        env:
+          SSH_KEY: ${{ secrets.KOLIBRI_PROD_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/kolibri-prod"
+          chmod 600 "$HOME/.ssh/kolibri-prod"
+          ssh-keyscan -H "${{ secrets.KOLIBRI_PROD_HOST }}" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Transfer immutable release package
+        shell: bash
+        env:
+          HOST: ${{ secrets.KOLIBRI_PROD_HOST }}
+          USER: ${{ secrets.KOLIBRI_PROD_USER }}
+          PORT: ${{ secrets.KOLIBRI_PROD_SSH_PORT }}
+          ARCHIVE: ${{ steps.package.outputs.archive }}
+          MANIFEST: ${{ steps.package.outputs.manifest }}
+          CHECKSUM: ${{ steps.package.outputs.checksum }}
+        run: |
+          set -euo pipefail
+          port="${PORT:-22}"
+          scp -i "$HOME/.ssh/kolibri-prod" -P "$port" \
+            "$ARCHIVE" "$MANIFEST" "$CHECKSUM" \
+            "$USER@$HOST:/tmp/"
+
+      - name: Install atomically and run host readiness gate
+        shell: bash
+        env:
+          HOST: ${{ secrets.KOLIBRI_PROD_HOST }}
+          USER: ${{ secrets.KOLIBRI_PROD_USER }}
+          PORT: ${{ secrets.KOLIBRI_PROD_SSH_PORT }}
+          CONFIG_PATH: ${{ secrets.KOLIBRI_PROD_CONFIG_PATH }}
+          ARCHIVE: ${{ steps.package.outputs.archive }}
+        run: |
+          set -euo pipefail
+          port="${PORT:-22}"
+          archive_name="$(basename "$ARCHIVE")"
+          manifest_name="${archive_name}.manifest.json"
+          checksum_name="${archive_name}.sha256"
+          ssh -i "$HOME/.ssh/kolibri-prod" -p "$port" "$USER@$HOST" \
+            "set -euo pipefail; \
+             test -f '$CONFIG_PATH'; \
+             test -s '/tmp/$archive_name'; \
+             test -s '/tmp/$manifest_name'; \
+             test -s '/tmp/$checksum_name'; \
+             staging=\"/tmp/kolibri-v3-deploy-${{ steps.release.outputs.sha }}\"; \
+             rm -rf \"$staging\"; mkdir -p \"$staging\"; \
+             tar -xzf '/tmp/$archive_name' -C \"$staging\"; \
+             installer=\"\$(find \"$staging\" -path '*/deploy/portable/install.sh' -type f -print -quit)\"; \
+             test -n \"$installer\"; \
+             chmod 700 \"$installer\"; \
+             sudo \"$installer\" '$CONFIG_PATH' '/tmp/$archive_name'; \
+             sudo rm -rf \"$staging\"; \
+             rm -f '/tmp/$archive_name' '/tmp/$manifest_name' '/tmp/$checksum_name'"
+
+      - name: Verify public production release
+        shell: bash
+        run: |
+          set -euo pipefail
+          headers="$RUNNER_TEMP/kolibri-public-headers.txt"
+          body="$RUNNER_TEMP/kolibri-public-body.html"
+          curl --fail-with-body --silent --show-error \
+            --retry 5 --retry-delay 3 --retry-connrefused \
+            -D "$headers" -o "$body" \
+            https://kolibriai.online/
+          curl --fail-with-body --silent --show-error \
+            --retry 5 --retry-delay 3 --retry-connrefused \
+            https://kolibriai.online/readyz >/dev/null
+          grep -qi '^x-kolibri-release:' "$headers"
+          grep -qi '<html' "$body"
+          grep -qi 'ProSmet\|Kolibri\|реш' "$body"
+
+      - name: Clean SSH material
+        if: always()
+        shell: bash
+        run: |
+          rm -f "$HOME/.ssh/kolibri-prod" "$HOME/.ssh/known_hosts"
