@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { SolverHome } from "@/components/kolibri-home/solver-home";
 
 export default function Home() {
-  redirect("/app");
+  return <SolverHome />;
 }
