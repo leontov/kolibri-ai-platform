@@ -47,7 +47,7 @@ function SolverHomeContent() {
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b bg-background/95 supports-[backdrop-filter]:bg-background/95">
         <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-3 px-4 sm:px-6">
           <Button type="button" variant="ghost" size="icon" className="md:hidden" aria-label={mobileNav ? "Закрыть навигацию" : "Открыть навигацию"} onClick={() => setMobileNav((value) => !value)}>{mobileNav ? <XIcon /> : <MenuIcon />}</Button>
           <a href="/home" className="flex items-center gap-2 font-semibold tracking-tight"><span className="flex size-7 items-center justify-center rounded-lg bg-foreground text-background"><SparklesIcon className="size-3.5" aria-hidden="true" /></span>Колибри</a>
