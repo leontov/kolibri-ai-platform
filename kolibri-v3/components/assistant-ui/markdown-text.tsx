@@ -49,8 +49,6 @@ const RICH_TEXT_PLUGINS = {
   mermaid: MERMAID_PLUGIN,
 } as const;
 
-// @assistant-ui/react-streamdown 0.3 narrows `code` to boolean even though
-// Streamdown 2.5 supports independent copy/download controls at runtime.
 const RICH_TEXT_CONTROLS = {
   table: false,
   code: {
@@ -177,7 +175,7 @@ const MarkdownTextImpl = () => (
       allowedImagePrefixes: [],
       allowedProtocols: ["https", "mailto"],
       allowDataImages: false,
-      defaultOrigin: "https://kolibriai.ru",
+      defaultOrigin: "https://kolibriai.online",
       blockedLinkClass: "aui-md-blocked-link",
       blockedImageClass: "aui-md-blocked-image",
     }}
