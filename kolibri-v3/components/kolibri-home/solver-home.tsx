@@ -39,27 +39,23 @@ function SolverHomeContent() {
     if (!action) return;
     aui.composer.setText(action.prompt);
     if (id === "photo") {
-      document.querySelector<HTMLButtonElement>("[data-testid='composer-add-attachment']")?.click();
+      document.querySelector<HTMLButtonElement>(".aui-composer-add-attachment")?.click();
       return;
     }
-    document.querySelector<HTMLElement>("[data-testid='composer-input']")?.focus();
+    document.querySelector<HTMLElement>(".aui-composer-input")?.focus();
   };
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-3 px-4 sm:px-6">
-          <Button type="button" variant="ghost" size="icon" className="md:hidden" aria-label={mobileNav ? "Закрыть навигацию" : "Открыть навигацию"} onClick={() => setMobileNav((value) => !value)}>
-            {mobileNav ? <XIcon /> : <MenuIcon />}
-          </Button>
+          <Button type="button" variant="ghost" size="icon" className="md:hidden" aria-label={mobileNav ? "Закрыть навигацию" : "Открыть навигацию"} onClick={() => setMobileNav((value) => !value)}>{mobileNav ? <XIcon /> : <MenuIcon />}</Button>
           <a href="/home" className="flex items-center gap-2 font-semibold tracking-tight"><span className="flex size-7 items-center justify-center rounded-lg bg-foreground text-background"><SparklesIcon className="size-3.5" aria-hidden="true" /></span>Колибри</a>
           <nav className="ml-4 hidden items-center gap-1 md:flex" aria-label="Основная навигация"><a className="rounded-lg bg-muted px-3 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href="/home">Решить</a><a className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href="/app">Рабочая область</a></nav>
           <div className="ml-auto flex items-center gap-2"><a href="/app" className="hidden rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex">Открыть приложение</a><Button asChild size="sm"><a href="/app">Войти</a></Button></div>
         </div>
       </header>
-
       {mobileNav ? <div className="fixed inset-x-0 top-14 z-30 border-b bg-background p-3 shadow-lg md:hidden"><nav className="grid gap-1" aria-label="Мобильная навигация"><a href="/home" className="rounded-lg px-3 py-3 text-sm font-medium hover:bg-muted">Решить</a><a href="/app" className="rounded-lg px-3 py-3 text-sm hover:bg-muted">Рабочая область</a><a href="/app" className="rounded-lg px-3 py-3 text-sm hover:bg-muted">История решений</a></nav></div> : null}
-
       <main className="mx-auto grid min-h-[calc(100dvh-3.5rem)] max-w-[1440px] md:grid-cols-[220px_minmax(0,1fr)]">
         <aside className="hidden border-r px-3 py-5 md:block"><div className="space-y-1"><SideLink active icon={<CalculatorIcon />} label="Решить задачу" href="/home" /><SideLink icon={<HistoryIcon />} label="История" href="/app" /><SideLink icon={<FileTextIcon />} label="Файлы" href="/app" /></div><div className="mt-8 border-t pt-4"><p className="px-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Последнее</p><a href="/app" className="mt-2 flex items-start gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted"><Clock3Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><span className="line-clamp-2">Открыть историю в рабочей области</span></a></div></aside>
         <section className="min-w-0"><div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-[920px] flex-col px-4 py-8 sm:px-6 sm:py-12"><div className="mb-7 text-center sm:mb-9"><div className="mx-auto mb-4 flex size-10 items-center justify-center rounded-xl border bg-muted/40"><SparklesIcon className="size-5" aria-hidden="true" /></div><h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Что нужно решить?</h1><p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">Напишите задачу обычным языком или прикрепите фото. Колибри разберёт условие, покажет ход решения и проверит результат.</p></div><div className="min-h-0 flex-1 rounded-2xl border bg-background shadow-sm"><AuiProvider value={aui}><Thread compact /></AuiProvider></div><div className="mt-4"><SolverActions onAction={runAction} /></div><p className="mt-5 text-center text-[11px] leading-5 text-muted-foreground">Проверяйте важные ответы. Для формул используйте $...$ или $$...$$ — они отображаются в результате как математическая разметка.</p></div></section>
