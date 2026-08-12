@@ -6,16 +6,14 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   CalculatorIcon,
-  ChevronDownIcon,
   Clock3Icon,
   FileTextIcon,
   HistoryIcon,
   MenuIcon,
-  PlusIcon,
   SparklesIcon,
   XIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 const suggestions = Suggestions([
   {
@@ -42,6 +40,7 @@ const suggestions = Suggestions([
 
 function SolverHomeContent() {
   const [mobileNav, setMobileNav] = useState(false);
+  const aui = useAui({ suggestions });
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
@@ -69,9 +68,7 @@ function SolverHomeContent() {
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <a href="/app" className="hidden rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground sm:inline-flex">Открыть приложение</a>
-            <Button asChild size="sm">
-              <a href="/app">Войти</a>
-            </Button>
+            <Button asChild size="sm"><a href="/app">Войти</a></Button>
           </div>
         </div>
       </header>
@@ -115,7 +112,7 @@ function SolverHomeContent() {
             </div>
 
             <div className="min-h-0 flex-1 rounded-2xl border bg-background shadow-sm">
-              <AuiProvider value={useAui({ suggestions })}>
+              <AuiProvider value={aui}>
                 <Thread compact />
               </AuiProvider>
             </div>
@@ -139,7 +136,7 @@ function SolverHomeContent() {
   );
 }
 
-function SideLink({ active, icon, label, href }: { active?: boolean; icon: React.ReactNode; label: string; href: string }) {
+function SideLink({ active, icon, label, href }: { active?: boolean; icon: ReactNode; label: string; href: string }) {
   return (
     <a
       href={href}
