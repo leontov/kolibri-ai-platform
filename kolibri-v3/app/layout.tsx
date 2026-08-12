@@ -13,10 +13,36 @@ import "katex/dist/katex.min.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Колибри — проектная рабочая среда",
+  title: "Колибри — AI-решение задач",
   description:
-    "Chat + Canvas для смет, проектов, документов и проверяемых результатов.",
+    "AI-помощник для решения задач: математика, объяснения по шагам, изображения, формулы, таблицы и документы.",
   applicationName: "Kolibri",
+  keywords: [
+    "Колибри",
+    "AI решатель",
+    "решение задач",
+    "математика",
+    "ИИ помощник",
+    "решение по фото",
+  ],
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    type: "website",
+    locale: "ru_RU",
+    title: "Колибри — AI-решение задач",
+    description:
+      "Решайте задачи обычным языком или по фото. Пошаговые объяснения, формулы, таблицы и история решений.",
+    siteName: "Kolibri",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Колибри — AI-решение задач",
+    description:
+      "AI-помощник для решения задач, объяснений по шагам и работы с изображениями.",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
